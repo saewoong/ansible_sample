@@ -1,0 +1,64 @@
+---
+- name: Set MySQL with modules
+  hosts: mysql
+  gather_facts: no
+  vars:
+    MySQL_root_user: root
+    MySQL_root_pass: test
+    MySQL_port: 3306
+
+  tasks:
+  - name: install MySQL-python and python-simplejson
+    yum:
+        name: "{{ item }}"
+        state: installed
+    with_items:
+        - MySQL-python
+        - python-simplejson
+    tags: yum
+
+  - name: MySQL create database
+    mysql_db:
+        name=ansible_rex
+        state=present
+        login_user="{{ MySQL_root_user }}" 
+        login_password="{{ MySQL_root_pass }}"  
+        login_host="{{ inventory_hostname }}" 
+        login_port="{{ MySQL_port }}"
+    tags: database
+
+  - name: MySQL user add_drop
+    mysql_user: 
+        name=federer 
+        password=test 
+        state=present  
+        priv=*.*:ALL 
+        login_user="{{ MySQL_root_user }}" 
+        login_password="{{ MySQL_root_pass }}"  
+        login_host="{{ inventory_hostname }}" 
+        login_port="{{ MySQL_port }}"
+    tags: add_user
+
+  - name: MySQL variables 
+    mysql_variables: 
+        variable=max_connections 
+        value=3000 
+        login_user=root 
+        login_password="{{ MySQL_root_pass }}"  
+        login_host="{{ inventory_hostname }}" 
+        login_port="{{ MySQL_port }}"
+    tags: variables
+
+  - name: Change MySQL root user password
+    mysql_user: 
+        name="{{ MySQL_root_user }}" 
+        state=present 
+        password=rex 
+        host="{{ item }}" 
+        login_user=root 
+        login_password="{{ MySQL_root_pass }}" 
+        login_host="{{ inventory_hostname }}" 
+        login_port="{{ MySQL_port }}"
+    with_items: 
+        - localhost 
+    tags: change_root
